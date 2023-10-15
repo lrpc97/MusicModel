@@ -1,61 +1,8 @@
-# Readme document for Part One: Create a SQL Database
-
-## Assumptions
-For this work while I have created and tested this model on PostgreSQL 16, all I have assumed is that any  Postgres Cluster used by the reviewer will have an o/s user of postgres which based on my understanding that is pretty standard, the only way you can usually have a non-postgres user is by compiling from sources or changing all the uid/gid's post installation.
-
-## This github repo contains 
-
-readme.md:
-
-This file contains all the details of the decisions I made as well as the SQL to create tables, primary keys, unique keys, default values and foreign key constraints. Also sample data to test the model and test the triggers/functions for the two history tables.
-   
-music_model_dump.sql:
-
-This file is a clear text dump file created with `pg_dump` that I have tested restores off into any of postgres 12-16, using the following command
-
-```sh
-pg_dump -U postgres -F p postgres > music_model_dump.sql 
-
-``` 
-create_music_model.sql:
- 
-If for any reason the dumpfile does not work I have provided a standard SQL script to first to drop any objects created by the failed dump and then the above name script to install the model again.
-
-```sh
- psql -U postgres postgres < drop_music_model.sql
- psql -U postgres postgres < create_music_model.sql
-``` 
-
-drop_music_model.sql:
-
-This script  can be used to clean up your environment after reviewing the model and the data within, using the following command
-  
-```sh
- psql -U postgres postgres < drop_music_model.sql
-``` 
-
-## Assumptions for the music model
-I have tried to keep this very simple, I have ensured all tables have primary keys, and unique keys where I am certain that there is uniqueness, I have added three columns created_on, updated_on and bywhat to each table for tracking when data was first created, last updated and bywhat (being what application or user made the change). I have not defined any cascading rules for the foreign key constraints either.
-
-### Create Schema for the music_model tables 
-As stated earlier I have assumed that PostgreSQL database in use is an open source version that should contain a postgres database by default and a postgres user too. This is true on all three editions of postgres I have worked on, Opensource postgres, EDB Extended and EDB Advanced.
-
-```sql
 --
 -- Create schema music_model to hold the tables, primary/unique indexes, constraints, functions and triggers and data.
 --
 CREATE SCHEMA IF NOT EXISTS music_model AUTHORIZATION postgres;
-``` 
 
-### Create Users, Users_Role and Users Authentication tables
-
-For this simple data model, I decided to create three tables, 1) Users that models a generic user, 2) Users_Role that covers the three different user types of Administrative, Write privs and Read-only privs and 3) the User_Authentication table that holds email_address and password to login.
-
-I also assumed that an admin user has admin rights and write/read rights, that a write user has read rights too, but no admin rights and that a read-only user only has read access. I could have modeled a more generic case of a user who could have had all three roles but I thought that was overkill and wanted to keep the model simple in this case. Also I have kept email_address with password within the user_authentication table instead of moving it into the user table as felt that made more sense.
-
-Finally for User_authentication I should be storing the password in encrypted mode, but for this case kept things simple. Also what I could have done is already create an admin_role that owned the schema and had all administrative privileges on the schema and objects within it, similarly for a write_role had insert, update and delete privileges and a read_only role that had selct privileges only. 
-
-```sql
 --
 -- DDL for music_model.users_role
 --
@@ -121,20 +68,8 @@ INSERT INTO music_model.users_authentication(email_address, password, users_id)
 VALUES('dave@pex.com', 'Soccer', 2);
 INSERT INTO music_model.users_authentication(email_address, password, users_id) 
 VALUES('lenka@pex.com',  'Baby', 3);
-``` 
 
-### Create Music_Albums and Music_Tracks tables
 
-Again here I have kept the tables extremely simple as at Omnifone we tracked loads of attributes for albums and tracks. Also we had an artists and genre tables but that is not being included either as I suppose that is not important for a rights holders database.
-
-Now obviously an album name is not unique but an album name and its release date should be. I did think about making track_name and duration unique but as there are millions and possibly billions of tracks in existence i did not want to take that risk. That also raised the thought of using BIGINT for track_Id but decided to leave as is for now.
-
-Also I am aware that in a each country that an Album could be released at different date, in different formats  and that the same albums in different countries may also have different sets of tracks by country, and this could also be due to licensing issues and censoring as well. Finally tracks are usually ordered in an album too but that is not important for Rights Holder management.
-
-Initially I left music_album_id out of the music_tracks table, but decided to put it back in but leave it NULL, as I think a track does not have to belong to an album. 
-
-  
-```sql
 --
 -- DDL for music_model.music_albums
 --
@@ -163,6 +98,7 @@ CREATE TABLE music_model.music_tracks
 ,CONSTRAINT fk_music_albums
  FOREIGN KEY(music_albums_id) REFERENCES music_model.music_albums(music_albums_id)
 );
+
 
 --
 -- Loading data into music tables to test model (choose a killers album as an example)
@@ -199,17 +135,8 @@ VALUES('The World We Live In', ROUND(EXTRACT(EPOCH FROM '00:04:40'::time),0), 1)
 
 INSERT INTO music_model.music_tracks(name, duration_seconds, music_albums_id) 
 VALUES('Goodnight, Travel Well', ROUND(EXTRACT(EPOCH FROM '00:06:51'::time),0), 1);
-``` 
 
-### Create Rights_Holders, Rights_Holders_Albums, Rights_Holders_Tracks and Rights_Holders_Organization tables
-
-Now my understanding of Rights_Holders is there can be many Rights_Holders for each album and track from Artists, Song Writers, Record Labels, DIstributers etc. Also these can also vary by country as well, but kept the model simple for this challenge. Maybe I should have added a Rights_Holders_Type table but that was not in scope.
-
-Also what I have not done is add any numbers for royalties in the model as no idea about how that part works. I added the Right_holders_organization here as there is an order to the tables, and I could have modelled that organizations may have parents too but decided to leave it at one level. Also left right_holders_organization_id NULL on Right_Holders as maybe they dont belong to an organization too. 
-
-FInally I did not decide to link users and right_holders as would expect that some admin in a band or organization would have an account on the application and setup all the Rights Holders metadata for each organization and possibly much of this would be automated.
-
-```sql
+                             
 --
 -- DDL for music_model.rights_holders_organization
 --
@@ -267,6 +194,7 @@ CREATE TABLE music_model.rights_holders_tracks
  FOREIGN KEY (music_tracks_id)   REFERENCES music_model.music_tracks(music_tracks_id)
 );
 
+                             
 --
 -- Loading data into rights holders tables to test model
 --
@@ -348,18 +276,7 @@ VALUES(2,9);
 INSERT INTO music_model.rights_holders_tracks(rights_holders_id, music_tracks_id)
 VALUES(2,10);
 
-``` 
-
-
-### Create Compilation_albums, Compilation_albums_tracks,  and Rights_Holders_Tracks tables
-
-Now what I did maybe wrong but for Compilation_albums I decided to model that there could be a rights_holder at the album level who distributes/advertises the album and separate rights_holders at the compilation_albums_tracks level too that give royalties to the rights holders of the individual songs.
-
-I also created a history table for each of Compilation_albums and Compilation_albums_tracks that are loaded with history of the before record after any rights_holders are changed at either the album or track level using before update row level triggers on the base tables that only fire when the rights_holder_id is different.
-
-
-```sql
-
+                             
 --
 -- DDL for music_model.compilation_albums  
 --
@@ -422,7 +339,7 @@ CREATE TABLE music_model.compilation_albums_tracks_history
 (compilation_albums_id INT         NOT NULL
 ,music_tracks_id       INT         NOT NULL
 ,rights_holders_id     INT         NOT NULL
-,created_on            TIMESTAMP  NOT NULL
+,created_on            TIMESTAMP   NOT NULL
 ,updated_on            TIMESTAMP   NOT NULL
 ,bywhat                VARCHAR(50) DEFAULT 'Pex App'
 ,PRIMARY KEY (compilation_albums_id, music_tracks_id, rights_holders_id, updated_on)
@@ -434,6 +351,8 @@ CREATE TABLE music_model.compilation_albums_tracks_history
  FOREIGN KEY (rights_holders_id)     REFERENCES music_model.rights_holders(rights_holders_id)
 );
 
+
+                             
 --
 -- Function that tracks changes to rights_holders for albums
 --
@@ -460,11 +379,12 @@ $$
 --
 -- Trigger that tracks changes to rights_holders for albums
 --
-CREATE TRIGGER rights_holders_id_changes_albums
+CREATE OR REPLACE TRIGGER rights_holders_id_changes_albums
 BEFORE UPDATE
 ON music_model.compilation_albums  
 FOR EACH ROW
 EXECUTE FUNCTION music_model.log_rights_holders_id_changes_albums();
+                             
 
 --
 -- Function that tracks changes to rights_holders for tracks
@@ -498,6 +418,7 @@ ON music_model.compilation_albums_tracks
 FOR EACH ROW
 EXECUTE FUNCTION music_model.log_rights_holders_id_changes_tracks();
 
+                             
 --
 -- Loading data into rights holders tables to test model
 --
@@ -515,5 +436,34 @@ UPDATE music_model.compilation_albums_tracks
 SET rights_holders_id = 2
 WHERE compilation_albums_id = 1 
 AND music_tracks_id = 1;
+                             
+                             
 
-```
+--
+-- Select all data from each table
+--
+select * from music_model.users_role;
+select * from music_model.users;
+select * from music_model.users;
+select * from music_model.users_authentication;
+                             
+select * from music_model.music_albums;        
+select * from music_model.music_tracks;  
+                             
+select * from music_model.rights_holders_organization;
+select * from music_model.rights_holders;
+select * from music_model.rights_holders_albums;
+select * from music_model.rights_holders_tracks;
+                             
+select * from music_model.compilation_albums;
+select * from music_model.compilation_albums_tracks;         
+select * from music_model.compilation_albums_history;
+select * from music_model.compilation_albums_tracks_history;
+
+
+
+
+
+
+
+
