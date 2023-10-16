@@ -444,7 +444,6 @@ AND music_tracks_id = 1;
 --
 select * from music_model.users_role;
 select * from music_model.users;
-select * from music_model.users;
 select * from music_model.users_authentication;
                              
 select * from music_model.music_albums;        
