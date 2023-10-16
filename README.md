@@ -5,7 +5,7 @@ For this work while I have created and tested this model on PostgreSQL 16, all I
 
 ## This github repo contains 
 
-readme.md:
+README.md:
 
 This file contains all the details of the decisions I made as well as the SQL to create tables, primary keys, unique keys, default values and foreign key constraints. Also sample data to test the model and test the triggers/functions for the two history tables.
    
@@ -52,6 +52,7 @@ chown postgres:postgres create_music_model.sql
 
 and then can run these sql scripts using the following command
 ```sh
+sudo su - postgres
 cd /home/postgres/
 psql -U postgres postgres < drop_music_model.sql
 psql -U postgres postgres < create_music_model.sql
@@ -62,7 +63,8 @@ drop_music_model.sql:
 This script  can be used to clean up your environment after reviewing the model and the data within, using the following command
   
 ```sh
- psql -U postgres postgres < drop_music_model.sql
+sudo su - postgres
+psql -U postgres postgres < drop_music_model.sql
 ``` 
 
 ## Assumptions for the music model
