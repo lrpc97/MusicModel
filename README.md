@@ -14,25 +14,47 @@ music_model_dump.sql:
 This file is a clear text dump file created with `pg_dump`  using the following command
 
 ```sh
+sudo su - postgres
 pg_dump -U postgres -F p postgres > music_model_dump.sql 
 
 ``` 
-
-To restore this dumpfile use the following command
+To restore this dumpfile first copy it to your server where you are going to test it, can be any location that postgres has access to and need to set postgres as the owner
 
 ```sh
+sudo su - 
+cp /uploaded_location/music_model_dump.sql  /home/postgres/music_model_dump.sql 
+cd /home/postgres/
+chown postgres:postgres music_model_dump.sql 
+``` 
+
+and then can restore this dumpfile use the following command
+
+```sh
+sudo su - postgres
+cd /home/postgres/
 psql -U postgres  < music_model_dump.sql 
 
 ``` 
-I have tested that this dumpfile should restore into any of postgres 11-16,
+I have tested that this dumpfile can be restored into any of postgres 11-16,
 
 create_music_model.sql:
  
-If for any reason the dumpfile does not work I have provided a standard SQL script to first to drop any objects created by the failed dump and then the above name script to install the model again.
+If for any reason the dumpfile does not work I have provided a standard SQL script to first to drop any objects created by the failed dump and then the above name script to install the model again. Similarly to above need to ensure that these files are uploaded to a location that postgres user has access to them and need to set postgres as the owner
 
 ```sh
- psql -U postgres postgres < drop_music_model.sql
- psql -U postgres postgres < create_music_model.sql
+sudo su - 
+cp /uploaded_location/drop_music_model.sql  /home/postgres/drop_music_model.sql
+cp /uploaded_location/create_music_model.sql  /home/postgres/create_music_model.sql
+cd /home/postgres/
+chown postgres:postgres drop_music_model.sql
+chown postgres:postgres create_music_model.sql
+``` 
+
+and then can run these sql scripts using the following command
+```sh
+cd /home/postgres/
+psql -U postgres postgres < drop_music_model.sql
+psql -U postgres postgres < create_music_model.sql
 ``` 
 
 drop_music_model.sql:
@@ -62,7 +84,7 @@ For this simple data model, I decided to create three tables, 1) Users that mode
 
 I also assumed that an admin user has admin rights and write/read rights, that a write user has read rights too, but no admin rights and that a read-only user only has read access. I could have modeled a more generic case of a user who could have had all three roles but I thought that was overkill and wanted to keep the model simple in this case. Also I have kept email_address with password within the user_authentication table instead of moving it into the user table as felt that made more sense.
 
-Finally for User_authentication I should be storing the password in encrypted mode, but for this case kept things simple. Also what I could have done is already create an admin_role that owned the schema and had all administrative privileges on the schema and objects within it, similarly for a write_role had insert, update and delete privileges and a read_only role that had select privileges only. 
+Finally for User_authentication I should be storing the password in encrypted mode, but for this case kept things simple. Also what I could have done is already create an admin_role that owned the schema and had all administrative privileges on the schema and objects within it, similarly for a write_role had insert, update and delete privileges and a read_only role that had selct privileges only. 
 
 ```sql
 --
@@ -216,7 +238,7 @@ Now my understanding of Rights_Holders is there can be many Rights_Holders for e
 
 Also what I have not done is add any numbers for royalties in the model as no idea about how that part works. I added the Right_holders_organization here as there is an order to the tables, and I could have modelled that organizations may have parents too but decided to leave it at one level. Also left right_holders_organization_id NULL on Right_Holders as maybe they dont belong to an organization too. 
 
-Finally I did not decide to link users and right_holders as would expect that some admin in a band or organization would have an account on the application and setup all the Rights Holders metadata for each organization and possibly much of this would be automated.
+FInally I did not decide to link users and right_holders as would expect that some admin in a band or organization would have an account on the application and setup all the Rights Holders metadata for each organization and possibly much of this would be automated.
 
 ```sql
 --
