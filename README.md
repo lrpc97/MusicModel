@@ -11,12 +11,21 @@ This file contains all the details of the decisions I made as well as the SQL to
    
 music_model_dump.sql:
 
-This file is a clear text dump file created with `pg_dump` that I have tested restores off into any of postgres 12-16, using the following command
+This file is a clear text dump file created with `pg_dump`  using the following command
 
 ```sh
 pg_dump -U postgres -F p postgres > music_model_dump.sql 
 
 ``` 
+
+To restore this dumpfile use the following command
+
+```sh
+psql -U postgres  < music_model_dump.sql 
+
+``` 
+I have tested that this dumpfile should restore into any of postgres 11-16,
+
 create_music_model.sql:
  
 If for any reason the dumpfile does not work I have provided a standard SQL script to first to drop any objects created by the failed dump and then the above name script to install the model again.
@@ -53,7 +62,7 @@ For this simple data model, I decided to create three tables, 1) Users that mode
 
 I also assumed that an admin user has admin rights and write/read rights, that a write user has read rights too, but no admin rights and that a read-only user only has read access. I could have modeled a more generic case of a user who could have had all three roles but I thought that was overkill and wanted to keep the model simple in this case. Also I have kept email_address with password within the user_authentication table instead of moving it into the user table as felt that made more sense.
 
-Finally for User_authentication I should be storing the password in encrypted mode, but for this case kept things simple. Also what I could have done is already create an admin_role that owned the schema and had all administrative privileges on the schema and objects within it, similarly for a write_role had insert, update and delete privileges and a read_only role that had selct privileges only. 
+Finally for User_authentication I should be storing the password in encrypted mode, but for this case kept things simple. Also what I could have done is already create an admin_role that owned the schema and had all administrative privileges on the schema and objects within it, similarly for a write_role had insert, update and delete privileges and a read_only role that had select privileges only. 
 
 ```sql
 --
@@ -207,7 +216,7 @@ Now my understanding of Rights_Holders is there can be many Rights_Holders for e
 
 Also what I have not done is add any numbers for royalties in the model as no idea about how that part works. I added the Right_holders_organization here as there is an order to the tables, and I could have modelled that organizations may have parents too but decided to leave it at one level. Also left right_holders_organization_id NULL on Right_Holders as maybe they dont belong to an organization too. 
 
-FInally I did not decide to link users and right_holders as would expect that some admin in a band or organization would have an account on the application and setup all the Rights Holders metadata for each organization and possibly much of this would be automated.
+Finally I did not decide to link users and right_holders as would expect that some admin in a band or organization would have an account on the application and setup all the Rights Holders metadata for each organization and possibly much of this would be automated.
 
 ```sql
 --
